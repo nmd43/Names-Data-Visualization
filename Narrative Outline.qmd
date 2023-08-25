@@ -1,0 +1,91 @@
+---
+title: "Narrative Outline"
+format: pdf
+editor: visual
+---
+
+## Title - Determinants of Popularity Over Time
+
+## Authors - Tyler Cheung, Nikita Daga, Kareena Legare, Shelby Tisdale, Luke Vrotsos, Ken Ye
+
+## Abstract
+
+This section will include a summary of background information, statistical methods, and results following our exploration of change in popularity of characters of Chinese names from 1930 to the early 21st century.
+
+## Introduction (Background/Lit Review)
+
+-   We will describe Bruce Bao's paper and previous literature on factors affecting the popularity of characters in Chinese Names over the given time period.
+
+-   explore previous literature related to topic (Bao paper explores popularity over time, etc.)
+
+    -   looking for more papers today
+
+-   connect to motivations for our topic/research question
+
+    -   Tyler and Ken's domain knowledge about culture and real world observations, explain why/how this has motivated our research. Applying cultural understanding of China and Chinese history to the context of our research.
+
+Dr. Bao's paper and corresponding dataset motivate our exploration of factors affecting the popularity of characters in Chinese Names over the given time period. We will conduct an extensive literature review of papers related to this topic, which will help us to contextualize the data and narrow our focus on important trends through our following exploration of the Chinese Names dataset.
+
+## Data
+
+-   givennames.csv, list variables of interest (ppm, decade, warmth, valence, competence, etc.)
+-   include background of survey methods for collection of data (number of reviewers, rating criteria, etc.) and descriptions of variable meaning.
+
+In an attempt to answer our research question, we will be using the givennames.csv dataset from the ChineseNames package created by Dr. Bao. Relevant variables include parts per million (ppm) of characters (in total and by decade), warmth of characters, valence of characters, and competence of characters, as rated by a small number of reviewers. We will include a discussion of inter-rater reliability to further understand the data.
+
+## Methods
+
+-   largely visualization-focused methodology, why we think that regression modeling was not the best approach to our research question, shift from thinking about models to refining visualizations
+
+<!-- -->
+
+-   explain process/motivation for plots
+    -   decisions for log-transformations, using geom_jitter instead of geom_point, filtering for top and bottom n variables instead of including all variables, challenges of working with a very large dataset
+
+<!-- -->
+
+-   description of data wrangling process for time series data (pivoting of datasets)
+
+-   explain process/motivation for model (if model is included)
+
+At the beginning of our analysis, we considered various approaches to answering our research question and concluded that a largely visualization-focused methodology would best fit our research interests. We undertook various steps to wrangle and appropriately visualize the data, and we encountered some challenges in working with a very large dataset. Each plot showcases relationships among relevant variables; we will include our specific motivations for each of these visualizations.
+
+## Results
+
+-   visualizations in EDA file
+
+    -   gender vs. popularity of characters
+
+    -   warmth, valence, competence vs. ppm per decade, add correlations to plot
+
+    -   correlation matrix with relevant variables
+
+    -   more visualizations to be added
+
+-   model ppm data (possible plots for residual analysis, etc.)
+
+-   interpretation of plots, important observations/patterns found
+
+After wrangling our data for visualizing, we created a plot for warmth, valence, and competence vs. ppm per decade. To show how the popularity of characters exhibiting very high and very low ratings has changed over time. We will put relevant variables used in a correlation matrix to examine the relationship between our variables. We also have plots examining character and corpus uniqueness over time. We observed that the uniqueness of names has been increasing with time. We intend to refine and add to our visualizations for our final product. We are considering adding a linear regression model with its diagnostic plots.
+
+## Discussion
+
+-   discussion of shared trends from visualizations in the discussion section, notable takeaways and patterns from our visual exploration of the data
+
+-   Tie back Lit Review to our findings/results
+
+-   Practical implementation of our findings for the change of popularity of Chinese names over time
+
+-   Discussion on the potential reasoning for our results using domain knowledge (Ken + Tyler)
+
+We intend to look at the results in the context of past literature to interpret why the results are as shown above. We will add an analysis on the cultural significance of these results as we attempt to explain the change in uniqueness over time.
+
+## Further Work/Limitations
+
+-   Discussion of the issues that we faced with Time Series Data
+
+-   Interested in popularity of different names (Multi-Character) + talk about limitations of dataset
+
+-   Difficulties in setting up a linear regression model
+
+## Citations

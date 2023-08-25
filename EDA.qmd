@@ -1,0 +1,293 @@
+---
+title: "EDA"
+format: pdf
+editor: visual
+---
+
+```{r, message = F}
+#| label: loading packages
+
+if (!require(pacman)) install.packages("pacman")
+#> Loading required package: pacman
+pacman::p_load(ChineseNames, tidyverse, corrplot, ggcorrplot)
+
+data(givenname)
+
+```
+
+```{r}
+#label: some simple visualizations
+
+set.seed(123)
+
+ggplot(givenname, aes(x = name.gender, y = name.valence, alpha = 0.5)) +
+  geom_jitter() +
+  labs(
+    title = "Valence vs. Gender",
+    x = "gender",
+    y = "valence"
+  ) +
+  theme_minimal()
+
+ggplot(givenname, aes(x = name.gender, y = name.warmth, alpha = 0.5)) +
+  geom_jitter() +
+  labs(
+    title = "Warmth vs. Gender",
+    x = "gender",
+    y = "warmth"
+  ) +
+  theme_minimal()
+
+cor(givenname$name.gender, givenname$name.warmth)
+
+ggplot(givenname, aes(x = name.gender, y = name.competence, alpha = 0.5)) +
+  geom_jitter() +
+  labs(
+    title = "Competence vs. Gender",
+    x = "gender",
+    y = "competence"
+  ) +
+  theme_minimal()
+
+givenname |>
+  group_by(bihua) |>
+  summarise(mean = mean(name.competence)) |>
+  ggplot(aes(x = bihua, y = mean)) +
+  geom_col() +
+  labs(
+    title = " Mean Competence vs. bihua (number of strokes)",
+    x = "Bihua",
+    y = "mean competence"
+  ) +
+  theme_minimal()
+  
+  ggplot(givenname, aes(x = bihua, y = name.competence, color = name.gender, alpha = 0.5)) +
+  geom_jitter() +
+    labs(
+      title = "Competence vs. bihua (number of strokes)",
+      x = "Bihua",
+      y = "competence"
+    ) +
+    theme_minimal()
+  
+```
+
+```{r}
+#| label: basic regression model
+
+reg1 <- lm(data = givenname, name.competence ~ bihua)
+summary(reg1)
+```
+
+```{r}
+#|label: data for decades
+#include in paper
+decades <- givenname |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade", values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+```
+
+```{r}
+#|label: warmth-vals
+#include in paper
+
+# top 200 warmth
+top200_warmth <- givenname |>
+  arrange(-name.warmth) |>
+  head(200)
+
+# bottom 200 warmth
+bottom200_warmth <- givenname |>
+  arrange(name.warmth) |>
+  head(200)
+
+warmth_decade <- bind_rows(top200_warmth, bottom200_warmth) |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade",
+               values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+```
+
+```{r}
+#|label: warmth v. decade visualization
+#include in paper
+
+# avg warmth of 100 most common names
+# avg warmth of all names, weighted by popularity - weighted.mean function
+
+
+ggplot() +
+  geom_jitter(warmth_decade, alpha = 0.75, 
+              mapping = aes(x = decade, y = log(ppm_decade), color = name.warmth)) +
+  #geom_line(ppm_mean, mapping = aes(x = decade, y = mean_ppm)) +
+  #geom_point(ppm_mean, mapping = aes(x = decade, y = mean_ppm)) +
+  scale_color_gradient2(low = "darkblue", mid = "white", high = "darkred", midpoint = 3) +
+  theme_minimal() + 
+  labs(x = "Decade",
+       y = "PPM",
+       title = "Frequency and Warmth of Chinese Characters Over Time")
+  
+
+```
+
+```{r}
+#| label: competence v. decade
+#include in paper
+
+# top competence
+top_comp <- givenname |>
+  arrange(-name.competence) |>
+  head(200)
+
+# bottom competence
+bottom_comp <- givenname |>
+  arrange(name.competence) |>
+  head(200)
+
+comp_decade <- bind_rows(top_comp, bottom_comp) |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade",
+               values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+
+ggplot() +
+  geom_jitter(comp_decade, 
+              mapping = aes(x = decade, y = log(ppm_decade), color = name.competence),
+              alpha = 0.75) +
+  scale_color_gradient2(low = "darkblue", mid = "white", high = "darkred", midpoint = 3) +
+  theme_minimal() + 
+  labs(x = "Decade",
+       y = "PPM",
+       title = "Frequency and Competence of Chinese Characters Over Time")
+```
+
+```{r}
+#| label: valence v. decade
+#include in paper
+
+# top valence
+top_valence <- givenname |>
+  arrange(-name.valence) |>
+  head(200)
+
+# bottom valence
+bottom_valence <- givenname |>
+  arrange(name.valence) |>
+  head(200)
+
+valence_decade <- bind_rows(top_valence, bottom_valence) |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade",
+               values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+
+ggplot() +
+  geom_jitter(valence_decade, 
+              mapping = aes(x = decade, y = log(ppm_decade), color = name.valence),
+              alpha = 0.75) +
+  scale_color_gradient2(low = "darkblue", mid = "white", high = "darkred", midpoint = 3) +
+  theme_minimal() + 
+  labs(x = "Decade",
+       y = "PPM",
+       title = "Frequency and Valence of Chinese Characters Over Time")
+```
+
+```{r}
+#| label: uniqueness-over-time
+#include in paper
+
+# proportion of top 100 names in each decade
+decades |>
+  group_by(decade) |>
+  arrange(-ppm_decade) |>
+  slice(1:100) |>
+  summarise(ppm_sum = sum(ppm_decade)) |>
+  ggplot(aes(x = decade, y = ppm_sum)) +
+  geom_line(group = 1) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = 'Characters are becoming more unique over time',
+       subtitle = 'Graph shows summed PPM of 100 most common characters per decade',
+       x = 'Decade(s)',
+       y = 'PPM')
+```
+
+```{r}
+#| label: correlation-matrix-1
+#include in paper
+corr_names <- givenname |> 
+  select(bihua, name.gender, name.ppm, name.uniqueness, name.valence, name.warmth,
+         name.competence,
+         corpus.uniqueness,
+         corpus.ppm) |>
+  cor(use = "pairwise.complete.obs") |>
+  round(2) |> 
+  corrplot(method = "number", number.cex = 0.7,
+           type = "lower")
+
+
+
+corr_names_warmth <- givenname |> 
+  select(ppm.1930_1959, ppm.1960_1969, ppm.1970_1979, ppm.1980_1989, ppm.1990_1999, ppm.2000_2008, name.warmth) |>
+  cor(use = "pairwise.complete.obs") |>
+  round(2) |> 
+  corrplot(method = "number", number.cex = 0.7,
+           type = "lower")
+```
+
+```{r}
+#| label: correlation-matrix-2
+
+names_corr <- givenname |>
+  select(bihua, name.gender, name.ppm, name.uniqueness, name.valence, name.warmth,
+         name.competence, corpus.ppm, corpus.uniqueness) |>
+  as.matrix() |>
+  cor()
+
+names_p_vals <- cor_pmat(names_corr)
+
+
+ggcorrplot(names_corr,
+          type = "lower",
+          method = "circle",
+          show.legend = TRUE,
+          legend.title = "Correlation Coefficient",
+          p.mat = names_p_vals,
+          colors = c("darkred", "white", "darkblue")) +
+  annotate("text",
+           color = "darkblue",
+           x = 2.7, y = 7,
+           size = 2.75,
+           label = "Size of circle indicates \nstrength of positive correlation") +
+  annotate("text",
+           color = "darkred",
+           x = 2.7, y = 6,
+           size = 2.75,
+           label = "X's indicate no significant \nrelationship (alpha > 0.05)") +
+  labs(title = "Correlation Matrix of Chinese Name Characteristics")
+```

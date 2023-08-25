@@ -1,0 +1,149 @@
+---
+title: "research"
+format: html
+editor: visual
+---
+
+```{r, message = FALSE}
+library(ChineseNames)
+library(tidyverse)
+library(tidymodels)
+library(caret)
+library(leaps)
+library(MASS)
+data("givenname")
+```
+
+```{r}
+#first model with all variables of interest
+m1 <- lm(ppm.1980_1989 ~ bihua + name.gender + name.valence + name.warmth + name.competence, data = givenname)
+summary(m1)
+
+#second model, removed insignificant terms
+m2 <- lm(ppm.1980_1989 ~ bihua + name.valence + name.competence, data = givenname)
+summary(m2)
+
+#third model, stepwise regression
+full.model <- lm(ppm.1980_1989 ~ bihua + name.gender + name.valence + name.warmth + name.competence, data = givenname)
+step.model <- stepAIC(full.model, direction = "both", 
+                      trace = FALSE)
+summary(step.model)
+```
+
+```{r}
+#create change in ppm variable
+diff <- givenname |>
+  mutate(diff = ppm.1980_1989 - ppm.1970_1979)
+
+#model with all variables of interest
+diff1 <- lm(diff ~ bihua + name.gender + name.valence + name.warmth + name.competence, data = diff)
+summary(diff1)
+
+#stepwise model
+diff_full <- lm(diff ~ bihua + name.gender + name.valence + name.warmth + name.competence, data = diff)
+diff_step <- stepAIC(diff_full, direction = "both", 
+                      trace = FALSE)
+summary(diff_step)
+```
+
+```{r}
+#competence plot
+
+# top competence
+top_comp <- givenname |>
+  arrange(-name.competence) |>
+  head(200)
+
+# bottom competence
+bottom_comp <- givenname |>
+  arrange(name.competence) |>
+  head(200)
+
+comp_decade <- bind_rows(top_comp, bottom_comp) |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade",
+               values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+
+ggplot() +
+  geom_jitter(comp_decade, mapping = aes(x = decade, y = log(ppm_decade), color = name.competence)) +
+  scale_color_gradient2(low = "darkblue", mid = "white", high = "darkred", midpoint = 3) +
+  theme_minimal() + 
+  labs(x = "Decade",
+       y = "PPM",
+       title = "Frequency and Competence of Chinese Characters Over Time")
+```
+
+```{r}
+#valence plot
+
+# top valence
+top_valence <- givenname |>
+  arrange(-name.valence) |>
+  head(200)
+
+# bottom valence
+bottom_valence <- givenname |>
+  arrange(name.valence) |>
+  head(200)
+
+valence_decade <- bind_rows(top_valence, bottom_valence) |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade",
+               values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+
+ggplot() +
+  geom_jitter(valence_decade, mapping = aes(x = decade, y = log(ppm_decade), color = name.valence)) +
+  scale_color_gradient2(low = "darkblue", mid = "white", high = "darkred", midpoint = 3) +
+  theme_minimal() + 
+  labs(x = "Decade",
+       y = "PPM",
+       title = "Frequency and Valence of Chinese Characters Over Time")
+```
+
+```{r}
+#uniqueness over time
+
+decades <- givenname |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade", values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+
+decades |>
+  group_by(decade) |>
+  arrange(-ppm_decade) |>
+  slice(1:100) |>
+  summarise(ppm_sum = sum(ppm_decade)) |>
+  ggplot(aes(x = decade, y = ppm_sum)) +
+  geom_line(group = 1) +
+  geom_point() +
+  theme_minimal() +
+  labs(title = 'Characters are becoming more unique over time',
+       subtitle = 'Graph shows summed PPM of 100 most common characters per decade',
+       x = 'Decade(s)',
+       y = 'PPM')
+```
+
+```{r}
+#change in corpus uniqueness over time
+#for top 100 characters, what ppm do they make up in general chinese language 
+```

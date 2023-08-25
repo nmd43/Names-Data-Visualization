@@ -1,0 +1,78 @@
+---
+title: "Modeling"
+format: html
+editor: visual
+---
+
+## Modeling
+
+```{r, message = FALSE}
+if (!require(pacman)) install.packages("pacman")
+#> Loading required package: pacman
+pacman::p_load(ChineseNames, tidyverse)
+
+data(givenname)
+data(familyname)
+```
+
+```{r}
+tone_name <- givenname |>
+  mutate(tone = as.factor(str_sub(pinyin, start= -1)),
+         tone = if_else(tone %in% c('1', '2', '3', '4'), tone, '0'))
+
+tone_name |>
+  group_by(tone) |>
+  count()
+```
+
+```{r}
+m1 <- lm(name.competence ~ bihua + tone, data = tone_name)
+summary(m1)
+
+m1 <- lm(name.competence ~ bihua + relevel(factor(tone), ref = "4"), data = tone_name)
+summary(m1)
+
+m2 <- lm(name.competence ~ name.gender, data = tone_name)
+summary(m2)
+
+m3 <- lm(name.competence ~ name.gender + bihua + relevel(factor(tone), ref = "4") + name.uniqueness + corpus.uniqueness, data = tone_name)
+summary(m3)
+
+cor(tone_name$name.uniqueness, tone_name$corpus.uniqueness)
+car::vif(m3)
+```
+
+```{r}
+
+givenname_1 <- givenname |>
+  mutate(difference = ((ppm.1980_1989 + ppm.1990_1999 + ppm.2000_2008)/3)- ((ppm.1970_1979 + ppm.1960_1969 + ppm.1930_1959)/3))
+
+lin_reg_1 <- lm(difference ~ bihua + name.valence + name.warmth + name.competence + name.gender + corpus.ppm, data = givenname_1)
+
+summary(lin_reg_1)
+
+
+```
+
+```{r}
+# residual plot
+res <- resid(lin_reg_1)
+plot(givenname_1$difference, res) 
+abline(0, 0)
+```
+
+```{r}
+# create Q-Q plot for residuals
+qqnorm(res)
+
+# add a straight diagonal line to the plot
+qqline(res) 
+```
+
+```{r}
+
+m4 <- lm(name.gender ~ name.warmth + name.competence + corpus.uniqueness + name.uniqueness, data = tone_name )
+
+summary(m4)
+
+```

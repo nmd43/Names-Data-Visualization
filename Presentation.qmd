@@ -1,0 +1,326 @@
+---
+title: "Changes in Uniqueness of Chinese Given Names Over Time"
+author: "Tyler Cheung, Nikita Daga, Kareena Legare, Shelby Tisdale, Luke Vrotsos, Ken Ye"
+format: revealjs
+editor: visual
+echo: false
+bibliography: references.bib
+---
+
+# Introduction
+
+## Names in Chinese Culture
+
+In Chinese culture, given names are carefully chosen and often contain meaning beyond mere identification
+
+### A Brief Timeline
+
+-   Before 1960: names convey ideas of reconstruction
+
+-   1970s: male names have meanings like "building the nation" and "building the army"
+
+-   Early 2000s: names meaning "space travel" grow in popularity
+
+## Chinese Names and Uniqueness
+
+-   The Need for Uniqueness (NFU): collectivism ➝ positive striving for difference
+
+-   Research shows that names can influence how people are perceived
+
+    -   Much of this research refers to alphabet-based languages
+
+    -   Doesn't take into account how naming trends change over time
+
+-   A name with less easy-to-recognize (more unique) characters may be perceived negatively (Du et al. 2021)
+
+## Our Study
+
+A visual exploration of changes in characteristics associated with characters used in Chinese given names from 1930 to 2008
+
+-   Interested in changes in warmth, competence, and valence associated with characters
+
+-   Do Chinese given names become more unique over time?
+
+-   What factors correspond with changes in uniqueness?
+
+# Data
+
+## Data {.scrollable}
+
+-   The given names data set from Bruce Bao's R package on Chinese names was used since it contained frequency of characters over time along with their characteristics
+
+-   Name warmth, competence, and valence were variables computed by subjective scores of Chinese raters on a Likert scale of 1 to 5
+
+-   The parts per million of each decade from 1930s to 2008 were the main variables used to identify the popularity of a character over time
+
+# Methods
+
+## Methods
+
+-   We found visualizations to be more effective than modeling to answer our research question.
+
+-   The original dataset was pivoted on the ppm by decade columns to create two distinct variables: ppm and decade. This allowed us to better analyze the data.
+
+## Methods
+
+-   The first three visualizations use scatter plots to show the relationship between frequency and the perceived warmth, competence, and valence of characters
+
+-   Only the top and bottom 200 characters based on ratings for each variable were included
+
+-   The fourth visualization uses a line plot to examine how the frequency of the 100 most common characters changes over time
+
+# Results
+
+## Results
+
+```{r}
+#| label: loading-packages
+#| message: false
+#| warning: false
+
+if (!require(pacman)) install.packages("pacman")
+#> Loading required package: pacman
+pacman::p_load(ChineseNames, tidyverse, corrplot, ggcorrplot, expss, scales)
+
+data(givenname)
+```
+
+```{r}
+#|label: data-for-decades
+
+decades <- givenname |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade", values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+```
+
+```{r}
+#|label: warmth-vals
+
+# top 200 warmth
+top200_warmth <- givenname |>
+  arrange(-name.warmth) |>
+  head(200)
+
+# bottom 200 warmth
+bottom200_warmth <- givenname |>
+  arrange(name.warmth) |>
+  head(200)
+
+warmth_decade <- bind_rows(top200_warmth, bottom200_warmth) |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade",
+               values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+```
+
+```{r}
+#| label: warmth-v-decade-visualization
+#| fig-height: 4
+#| fig-width: 8
+##| fig-cap: "Frequency and Warmth of Chinese Characters Over Time"
+
+# avg warmth of 100 most common names
+# avg warmth of all names, weighted by popularity - weighted.mean function
+
+
+ggplot() +
+  geom_jitter(warmth_decade, alpha = 0.75, 
+              mapping = aes(x = decade, y = log(ppm_decade), color = name.warmth)) +
+  #geom_line(ppm_mean, mapping = aes(x = decade, y = mean_ppm)) +
+  #geom_point(ppm_mean, mapping = aes(x = decade, y = mean_ppm)) +
+  scale_color_gradient2(low = "darkblue", mid = "white", high = "darkred", midpoint = 3) +
+  theme_minimal() + 
+  labs(x = "Decade",
+       y = "Natural Log of PPM",
+       title = "Decrease in Mixing Between 'Warm' and 'Cold' Characters Over Time ",
+       subtitle = "For 400 characters used in Chinese Given Names",
+       color = "warmth") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+## Results
+
+```{r}
+#| label: competence-v-decade
+#| fig-height: 4
+#| fig-width: 8
+##| fig-cap: "Frequency and Competence of Chinese Characters Over Time"
+
+# top competence
+top_comp <- givenname |>
+  arrange(-name.competence) |>
+  head(200)
+
+# bottom competence
+bottom_comp <- givenname |>
+  arrange(name.competence) |>
+  head(200)
+
+comp_decade <- bind_rows(top_comp, bottom_comp) |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade",
+               values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+
+ggplot() +
+  geom_jitter(comp_decade, 
+              mapping = aes(x = decade, y = log(ppm_decade), color = name.competence),
+              alpha = 0.75) +
+  scale_color_gradient2(low = "darkblue", mid = "white", high = "darkred", midpoint = 3) +
+  theme_minimal() + 
+  labs(x = "Decade",
+       y = "Natural Log of PPM",
+       title = "Use of 'Less Competent' Characters Has Increased in Recent Decades",
+       subtitle = "For 400 characters used in Chinese Given Names",
+       color = "competence") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+## Results
+
+```{r}
+#| label: valence v. decade
+#| fig-height: 4
+#| fig-width: 8
+##| fig-cap: "Frequency and Valence of Chinese Characters Over Time"
+
+# top valence
+top_valence <- givenname |>
+  arrange(-name.valence) |>
+  head(200)
+
+# bottom valence
+bottom_valence <- givenname |>
+  arrange(name.valence) |>
+  head(200)
+
+valence_decade <- bind_rows(top_valence, bottom_valence) |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade",
+               values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+
+ggplot() +
+  geom_jitter(valence_decade, 
+              mapping = aes(x = decade, y = log(ppm_decade), color = name.valence),
+              alpha = 0.75) +
+  scale_color_gradient2(low = "darkblue", mid = "white", high = "darkred", midpoint = 3) +
+  theme_minimal() + 
+  labs(x = "Decade",
+       y = "Natural Log of PPM",
+       title = "Less Mixing Between Frequencies of Names with High and Low Valence Over Time",
+       subtitle = "For 400 characters used in Chinese Given Names",
+       color = "valence") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+## Results
+
+```{r}
+#| label: uniqueness-over-time
+##| fig-cap: "Character Uniqueness Over Time"
+
+# proportion of top 100 names in each decade
+decades |>
+  group_by(decade) |>
+  arrange(-ppm_decade) |>
+  slice(1:100) |>
+  summarise(ppm_sum = sum(ppm_decade)) |>
+  ggplot(aes(x = decade, y = ppm_sum)) +
+  geom_line(group = 1) +
+  geom_point() +
+  theme_minimal() +
+  scale_y_continuous(labels = label_number(suffix = " M", scale = 1e-6, accuracy = 0.1)) +
+  labs(title = 'Characters are becoming more unique over time',
+       subtitle = 'Graph shows summed PPM of 100 most common characters per decade',
+       x = 'Decade(s)',
+       y = 'Summed PPM') +
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+        plot.subtitle = element_text(size = 12, hjust = 0.5))
+```
+
+# Discussion
+
+## Discussion
+
+-   **Research Goal:** This research project aimed to visualize the change of popularity of Chinese characters in name usage for given names using factors including as ppm, warmth, competence, and valence during the time from 1930-2008
+
+-   **Results:** Our visualizations that we created helped us reveal an increased uniqueness in characters used in Chinese given names over time. 
+
+-   **Trends:** Decrease in ppm of the most popular characters in Chinese given names throughout time.
+
+-   Increase in avg ppm for characters with high ratings in warmth, competence, valence
+
+# Limitations and Further Research
+
+## Limitations and Further Research
+
+**Subjective** ratings without external references
+
+-   **Variance** and potential **bias**
+
+-   Influence subjectivity: rater education level & birth cohort 
+
+-   Mitigate: 10+ raters & inter-rater reliability \> 0.7 
+
+-   Further reduce variance: more raters & specific guidelines 
+
+## Limitations and Further Research
+
+**Longitudinal data lacking** for `valence`, `warmth`, `competence`
+
+-   Rely on `ppm` for all time series analysis
+
+-   Dr. Bruce Bao: ratings assumed to be stable over time
+
+## Limitations and Further Research
+
+**Multi character ratings** absent
+
+-   Only ratings for single characters available
+
+-   Combining single characters may produce different connotation
+
+-   Potentially useful for improving regression model
+
+## References {.scrollable}
+
+-   Bao, Han-Wu-Shuang. 2021. *ChineseNames: Chinese Name Database 1930-2008*. https://cran.r-project.org/web/packages/ChineseNames/index.html.
+
+-   Cai, Huajian, Xi Zou, Yi Feng, Yunzhi Liu, and Yiming Jing. 2018. "Increasing Need for Uniqueness in Contemporary China: Empirical Evidence."*Frontiers in Psychology* 9 (May). https://doi.org/10.3389/fpsyg.2018.00554.
+
+-   Du, Xiaopeng, Dian Gu, Mengchen Dong, Jiang Jiang, and Wen Jiang. 2021. "Pictographic Name, Warmth Perception, and Trust: Easy Chinese Name Holders Are Seen as Warmer and More Trustworthy." *Current Psychology* 42 (8): 6846--55. https://doi.org/10.1007/s12144-021-01938-7.
+
+-   "What Can We Tell from the Evolution of Han Chinese Names?" 2021. https://kontinentalist.com/stories/a-cultural-history-of-han-chinese-names-for-girls-and-boys-in-china.
+
+-   Wu, Ching-Chao. 1927. "The Chinese Family: Organization, Names, and Kinship Terms."*American Anthropologist* 29 (3): 316--25. https://www.jstor.org/stable/661154.
+
+-   Xu, Yi, and Takeshi Hamamura. 2014. "Folk Beliefs of Cultural Changes in China."*Frontiers in Psychology* 5 \\September). https://doi.org/10.3389/fpsyg.2014.01066.13

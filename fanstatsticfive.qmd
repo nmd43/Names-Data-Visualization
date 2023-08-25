@@ -1,0 +1,190 @@
+---
+title: "Fanstatstic Five - Team Introduction"
+author: " Luke Vrotsos, Tyler Cheung, Kareena Legare, Shelby Tisdale, Ken Ye"
+format:
+  revealjs:
+    scrollable: true
+---
+
+## Names
+
+### Graduate Mentor
+
+Luke Vrotsos
+
+### Undergraduates
+
+Tyler Cheung
+
+Kareena Legare
+
+Shelby Tisdale
+
+Ken Ye
+
+Nikita Daga
+
+## Data
+
+```{r}
+#|echo: false
+if (!require(pacman)) install.packages("pacman")
+#> Loading required package: pacman
+pacman::p_load(ChineseNames, tidyverse, corrplot, ggcorrplot)
+
+data(givenname)
+```
+
+**givennames.csv**
+
+1.  Potential Plots
+
+    1.  Relationship between `name.gender` and `name.valence` (**scatterplot**) 
+
+    2.  Relationship between `name.uniqueness` and `name.gender` (**scatterplot**)
+
+    3.  Relationship between Avg. of `name.competence` and `bihua` (**scatterplot, points colored by gender**)
+
+2.  Variables of Interest
+
+    1.  `name.gender`
+
+    2.  `name.valence`
+
+    3.  `name.uniqueness`
+
+    4.  `name.competence`
+
+    5.  `bihua`(number of strokes in character)
+
+    6.  `corpus.ppm`
+
+    7.  `corpus.uniqueness` 
+
+## EDA Part I
+
+```{r}
+  ggplot(givenname, aes(x = bihua, y = name.competence, color = name.gender, alpha = 0.5)) +
+  geom_jitter() +
+    labs(
+      title = "Competence vs. bihua (number of strokes)",
+      x = "Bihua",
+      y = "competence"
+    ) +
+    theme_minimal()
+```
+
+```{r}
+#|label: warmth v. decade visualization
+
+# top 30 warmth
+top30_warmth <- givenname |>
+  arrange(-name.warmth) |>
+  head(30)
+
+# bottom 30 warmth
+bottom30_warmth <- givenname |>
+  arrange(name.warmth) |>
+  head(30)
+
+warmth_decade <- bind_rows(top30_warmth, bottom30_warmth) |>
+  pivot_longer(cols = ppm.1930_1959:ppm.2000_2008, names_to = "decade",
+               values_to = 'ppm_decade') |>
+  mutate(decade = gsub("ppm.", "", decade),
+         decade = case_when(decade == '1930_1959' ~ 'Before 1960',
+                            decade == '1960_1969' ~ '1960s',
+                            decade == '1970_1979' ~ '1970s',
+                            decade == '1980_1989' ~ '1980s',
+                            decade == '1990_1999' ~ '1990s',
+                            decade == '2000_2008' ~ '2000s'),
+         decade = fct_relevel(decade, 'Before 1960', after = 0)) 
+
+
+warmth_decade |>
+ggplot(aes(x = decade, y = ppm_decade, color = name.warmth)) +
+  geom_jitter(alpha = 0.5) +
+  theme_minimal() + 
+  labs(x = "Decade",
+       y = "PPM",
+       title = "Frequency and Warmth of Chinese Characters Over Time")
+```
+
+## EDA Part II
+
+```{r}
+#| label: correlation-matrix-1
+
+corr_names <- givenname |> 
+  select(bihua, name.gender, name.ppm, name.uniqueness, name.valence, name.warmth,
+         name.competence,
+         corpus.uniqueness,
+         corpus.ppm) |>
+  cor(use = "pairwise.complete.obs") |>
+  round(2) |> 
+  corrplot(method = "number", number.cex = 0.7,
+           type = "lower")
+
+
+```
+
+```{r}
+#| label: correlation-matrix-2
+
+names_corr <- givenname |>
+  select(bihua, name.gender, name.ppm, name.uniqueness, name.valence, name.warmth,
+         name.competence, corpus.ppm, corpus.uniqueness) |>
+  as.matrix() |>
+  cor()
+
+names_p_vals <- cor_pmat(names_corr)
+
+
+ggcorrplot(names_corr,
+          type = "lower",
+          method = "circle",
+          show.legend = TRUE,
+          legend.title = "Correlation Coefficient",
+          p.mat = names_p_vals,
+          colors = c("darkred", "white", "darkblue")) +
+  annotate("text",
+           color = "darkblue",
+           x = 2.7, y = 7,
+           size = 2.75,
+           label = "Size of circle indicates \nstrength of positive correlation") +
+  annotate("text",
+           color = "darkred",
+           x = 2.7, y = 6,
+           size = 2.75,
+           label = "X's indicate no significant \nrelationship (alpha > 0.05)") +
+  labs(title = "Correlation Matrix of Chinese Name Characteristics")
+```
+
+## Research Questions
+
+1.  How does name gender relate to warmth, competence, and valence of the name? 
+
+2.  Is name competence related to bihua? (Start from here in our modeling)
+
+3.  What is the correlation between tonation and alphabetical name preference with warmth, competence, and valence of the name?
+
+4.  Time series of average given name warmth, competence, valence across 6 birth cohorts. 
+
+5.  Given name tone (last digit of the \"pinyin\" variable, 1-4) vs. warmth, competence, valence...
+
+6.  How has bihua of names changed over time?
+
+## Modeling
+
+```{r}
+#|echo: false
+tone_name <- givenname |>
+  mutate(tone = as.factor(str_sub(pinyin, start= -1)),
+         tone = if_else(tone %in% c('1', '2', '3', '4'), tone, '0'))
+```
+
+```{r}
+m3 <- lm(name.competence ~ name.gender + bihua + relevel(factor(tone), ref = "4") + name.uniqueness + corpus.uniqueness, data = tone_name)
+summary(m3)
+
+car::vif(m3)
+```
