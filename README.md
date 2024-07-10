@@ -1,5 +1,8 @@
 # Changes in Uniqueness of Chinese Given Names Over Time
 
+## Documentation:
+The final report containing the methods used, results, and limitations can be found in the docs folder.
+
 ## Authors: 
 Tyler Cheung, Nikita Daga, Kareena Legare, Shelby Tisdale, Luke Vrotsos, Ken Ye
 
